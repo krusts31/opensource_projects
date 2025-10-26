@@ -140,6 +140,19 @@ server {
 }
 ```
 
+### RENEWAL
+
+[Read about it here](https://docs.rockylinux.org/10/guides/security/generating_ssl_keys_lets_encrypt/#automating-lets-encrypt-certificate-renewal)
+
+```bash
+#this it this is a safe command and it will just check if in theory everything works for renewal
+certbot renew --dry-run
+
+sudo crontab -e
+#then add the line to conrtab 
+30 2 * * * /usr/bin/certbot renew --quiet --post-hook "systemctl reload nginx" >> /var/log/certbot-renew.log 2>&1
+```
+
 ## ELASTIC SEARCH
 
 Elastic search trafic is encrypted by default.
