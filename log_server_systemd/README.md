@@ -1,5 +1,7 @@
 # ELK STACK
 
+This is elk stack single node elastic search with out containers with systemd.
+
 RPLACE DNS with you hostname or IP
 
 ![ARCH](./ELK.svg)
@@ -167,6 +169,8 @@ https://www.elastic.co/docs/reference/elasticsearch/configuration-reference/secu
 
 Relevent configuration.
 
+Here you also need to add certs `/etc/elasticsearch/certs/ca` `/etc/elasticsearch/certs/elasticserach`.  Ca to enstablish the authority root and elasticsearch certs to ecnrypt the trafic.
+
 ```yaml
 http.host: localhost		#listens on localhost
 discovery.type: single-node	#need for single node setup
@@ -186,6 +190,8 @@ trafic from ngixn to kibana is unecnrypted but that is irelevent since its on lo
 trafic to nginx is encrypted therfor we have tls from client to server.
 
 Kibana is inslated under `/opt` since it needs to write to system. it install sombe plugins.
+
+Here you also need to add certs `/etc/kibana/certs/ca`. You have to copy the certs from `/etc/elasticsearch/certs/ca` to `/etc/kibana/certs/ca`. Make sure they are and owned by kibana. 1 of then ca.crt is used to confirm the chian for elasticseach crt.
 
 log dir `/var/log/kibana/`.
 data dir `/var/lib/kibana/`.
@@ -213,9 +219,11 @@ This is the part the recive the logs and process them
 
 in logstash dir run `downlaod.sh` this is download and configure users for logstash .
 
-then configure `/etc/kibana/logstash.yml` to match the example.
+then configure `/etc/logstash/logstash.yml` to match the example.
 
-then configure `/etc/kibana/conf.d/pipeline.conf` to match the example. The parsing and socket get configured here
+Here you also need to add certs `/etc/logsatsh/certs/ca` `/etc/logsatsh/certs/logstash`. You have to copy the certs from `/etc/elasticsearch/certs/ca` and `/etc/elasticsearch/certs/logsatsh`. to `/etc/logsatsh/certs`. Make sure they are and owned by logstash. 1 of then ca.crt is used to confirm the chian for elasticseach crt and logash cert and key is used to encrypt trafic and to check client certificates for filebeat.
+
+then configure `/etc/logstash/conf.d/pipeline.conf` to match the example. The parsing and socket get configured here
 
 then run `bash ./configure.sh` this should start logstash serach you can use systemct to check its status un logs in case there is something wrong. 
 
@@ -260,6 +268,8 @@ then configure `/etc/filebat/filebat.yml` to match the example.
 
 then run `bash ./configure.sh` this should start filebeat serach you can use systemct to check its status un logs in case there is something wrong. 
 
+Here you also need to add certs `/etc/filebeat/certs/ca` `/etc/filebeat/certs/filebeat`. You have to copy the certs from `/etc/elasticsearch/certs/ca` and `/etc/elasticsearch/certs/filebeat`. to `/etc/filebeat/certs`. Make sure they are and owned by filebeat. 1 of then ca.crt is used to confirm the chian for logstash crt and filebeat cert and key is used to authenticate to logstash server with certificates.
+
 relevant config
 ```yaml
 filebeat.inputs:
@@ -270,6 +280,10 @@ filebeat.inputs:
   paths:
     - /var/log/nginx/access.log #path to logs
   fields_under_root: true #if runing as root
+- type: journald
+  id: service-vault
+  include_matches.match:
+    - "_SYSTEMD_UNIT=vault.service"
 
 setup.kibana:
   host: "https://$DNS/kibana"
@@ -285,7 +299,17 @@ output.logstash:
   ssl.verification_mode: full
 ```
 
+### JOURNALCTL
+
+So if your input is from `journalctl` then u need to add filebeat to systemd-journal group.
+
+```bash
+sudo usermod -aG systemd-journal filebeat
+sudo systemctl restart filebeat
+```
+
+
 
 ## LOGROTATE
 
-This is the part that rotae the logs
+This is the part that rotae the logs not 
