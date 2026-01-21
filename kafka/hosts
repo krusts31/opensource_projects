@@ -1,0 +1,10 @@
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+192.168.8.126 controller1.olgrounds.dev
+192.168.8.124 controller2.olgrounds.dev
+192.168.8.125 controller3.olgrounds.dev
+
+192.168.8.122 v1.olgrounds.dev
+192.168.8.123 v2.olgrounds.dev
+192.168.8.121 v3.olgrounds.dev
