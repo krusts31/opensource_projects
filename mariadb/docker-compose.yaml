@@ -1,0 +1,95 @@
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  backup:
+    build:
+      dockerfile: ./Dockerfile
+    hostname: "backup"
+    command: ["/bin/sleep", "3600"]
+    networks:
+      - app-tier
+
+  haproxy:
+    image: haproxy:latest
+    hostname: "haproxy"
+    ports:
+      - "3306:3306"
+      - "8404:8404"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - app-tier
+    depends_on:
+      - mariadb-galera-0
+      - mariadb-galera-1
+      - mariadb-galera-2
+
+  mariadb-galera-0:
+    image: bitnamilegacy/mariadb-galera:12.0.2-debian-12-r0
+    hostname: "mariadb-galera"
+    environment:
+      - MARIADB_GALERA_CLUSTER_NAME=my_galera
+      - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+      - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+      - MARIADB_ROOT_PASSWORD=my_root_password
+      - MARIADB_GALERA_CLUSTER_BOOTSTRAP=yes
+      - MARIADB_USER=my_user
+      - MARIADB_PASSWORD=my_password
+      - MARIADB_DATABASE=my_database
+      - MARIADB_REPLICATION_USER=my_replication_user
+      - MARIADB_REPLICATION_PASSWORD=my_replication_password
+    networks:
+      - app-tier
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mariadb-galera/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  mariadb-galera-1:
+    image: bitnamilegacy/mariadb-galera:12.0.2-debian-12-r0
+    hostname: "mariadb-galera-1"
+    depends_on:
+      mariadb-galera-0:
+        condition: service_healthy
+    environment:
+      - MARIADB_GALERA_CLUSTER_NAME=my_galera
+      - MARIADB_GALERA_CLUSTER_ADDRESS=gcomm://mariadb-galera:4567,0.0.0.0:4567
+      - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+      - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+      - MARIADB_ROOT_PASSWORD=my_root_password
+      - MARIADB_REPLICATION_USER=my_replication_user
+      - MARIADB_REPLICATION_PASSWORD=my_replication_password
+    networks:
+      - app-tier
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mariadb-galera/healthcheck.sh']
+      interval: 15s
+      timeout: 5s
+      retries: 6
+
+  mariadb-galera-2:
+    image: bitnamilegacy/mariadb-galera:12.0.2-debian-12-r0
+    hostname: "mariadb-galera-2"
+    depends_on:
+      mariadb-galera-0:
+        condition: service_healthy
+      mariadb-galera-1:
+        condition: service_healthy
+    environment:
+      - MARIADB_GALERA_CLUSTER_NAME=my_galera
+      - MARIADB_GALERA_CLUSTER_ADDRESS=gcomm://mariadb-galera:4567,0.0.0.0:4567
+      - MARIADB_GALERA_MARIABACKUP_USER=my_mariabackup_user
+      - MARIADB_GALERA_MARIABACKUP_PASSWORD=my_mariabackup_password
+      - MARIADB_ROOT_PASSWORD=my_root_password
+      - MARIADB_REPLICATION_USER=my_replication_user
+      - MARIADB_REPLICATION_PASSWORD=my_replication_password
+    networks:
+      - app-tier
+    healthcheck:
+      test: ["CMD", "/opt/bitnami/scripts/mariadb-galera/healthcheck.sh", "--replication_all"]
+      interval: 15s
+      timeout: 5s
+      retries: 6

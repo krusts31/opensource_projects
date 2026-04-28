@@ -1,0 +1,3 @@
+[submodule "mariadb_galera/slapd-server-mock"]
+	path = mariadb_galera/slapd-server-mock
+	url = https://github.com/docker-ThoTeam/slapd-server-mock.git
